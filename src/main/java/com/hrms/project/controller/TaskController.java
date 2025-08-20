@@ -1,6 +1,7 @@
 package com.hrms.project.controller;
 
 import com.hrms.project.dto.AllTaskDTO;
+import com.hrms.project.dto.PaginatedResponseDTO;
 import com.hrms.project.dto.TaskDTO;
 import com.hrms.project.dto.TaskUpdateDTO;
 import com.hrms.project.entity.Task;
@@ -31,7 +32,7 @@ public class TaskController {
                                                     @PathVariable String tlId,
                                                     @PathVariable String projectId,
                                                     @RequestPart(value = "attachedFileLinks",required = false)
-                                                        MultipartFile[] attachedFileLinks,
+                                                    MultipartFile[] attachedFileLinks,
                                                     @RequestPart TaskDTO taskDTO) throws IOException {
 
         return new ResponseEntity<>(taskService.createAssignment(employeeId,tlId,attachedFileLinks,projectId,taskDTO), HttpStatus.CREATED);
@@ -39,11 +40,11 @@ public class TaskController {
     }
 
     @GetMapping("{pageNumber}/{pageSize}/{sortBy}/{sortOrder}/all/tasks/{employeeId}")
-    public ResponseEntity<List<AllTaskDTO>> getALlTasks(@PathVariable Integer pageNumber,
-                                                        @PathVariable Integer pageSize,
-                                                        @PathVariable String sortBy,
-                                                        @PathVariable String sortOrder,
-                                                        @PathVariable String employeeId)
+    public ResponseEntity<PaginatedResponseDTO> getALlTasks(@PathVariable Integer pageNumber,
+                                                            @PathVariable Integer pageSize,
+                                                            @PathVariable String sortBy,
+                                                            @PathVariable String sortOrder,
+                                                            @PathVariable String employeeId)
     {
         return new ResponseEntity<>(taskService.getAllTasks(pageNumber,pageSize,sortBy,sortOrder,employeeId),HttpStatus.OK);
 
@@ -88,7 +89,7 @@ public class TaskController {
     public ResponseEntity<String> updateTaskHistory(@PathVariable String taskId,
                                                     @PathVariable String reviewedById,
                                                     @PathVariable String projectId,
-                                                 //  @RequestPart MultipartFile[] relatedFileLinks,
+                                                    //  @RequestPart MultipartFile[] relatedFileLinks,
                                                     @RequestBody TaskUpdateDTO taskUpdateDTO) throws IOException {
 
         return new ResponseEntity<>(taskService.updateStatus(reviewedById,taskId,projectId, taskUpdateDTO),
@@ -102,7 +103,7 @@ public class TaskController {
 
     }
     @GetMapping("{pageNumber}/{pageSize}/{sortBy}/{sortOrder}/{tlId}")
-    public ResponseEntity<List<TaskDTO>> getTasks(@PathVariable Integer pageNumber,
+    public ResponseEntity<PaginatedResponseDTO> getTasks(@PathVariable Integer pageNumber,
                                                   @PathVariable Integer pageSize,
                                                   @PathVariable String sortBy,
                                                   @PathVariable String sortOrder,

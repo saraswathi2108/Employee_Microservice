@@ -3,6 +3,7 @@ package com.hrms.project.service;
 import com.hrms.project.configuration.TaskId;
 import com.hrms.project.configuration.TaskUpdateId;
 import com.hrms.project.dto.AllTaskDTO;
+import com.hrms.project.dto.PaginatedResponseDTO;
 import com.hrms.project.dto.TaskDTO;
 import com.hrms.project.dto.TaskUpdateDTO;
 import com.hrms.project.entity.*;
@@ -71,15 +72,14 @@ public class TaskServiceImpl {
         return "Assignment Created Successfully";
     }
 
-    public List<AllTaskDTO> getAllTasks(Integer pageNumber,Integer pageSize, String sortBy, String sortOrder,String employeeId) {
+    public PaginatedResponseDTO getAllTasks(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String employeeId) {
 
 
-        Sort sortByAndOrder=sortOrder.equalsIgnoreCase("asc")
-                ?Sort.by(sortBy).ascending()
-                :Sort.by(sortBy).descending();
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(pageNumber,pageSize,sortByAndOrder);
-
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with id: " + employeeId));
@@ -88,9 +88,9 @@ public class TaskServiceImpl {
             throw new TaskNotFoundException("This employee has no tasks assigned");
         }
 
-       Page<Task> tasks = taskRepository.findByEmployee_EmployeeId(employeeId,pageable);
+        Page<Task> tasksPage = taskRepository.findByEmployee_EmployeeId(employeeId, pageable);
 
-        return tasks.stream()
+        List<AllTaskDTO> taskDTOs = tasksPage.getContent().stream()
                 .map(task -> {
                     AllTaskDTO dto = new AllTaskDTO();
                     dto.setId(task.getId().getTaskId());
@@ -105,7 +105,22 @@ public class TaskServiceImpl {
                     return dto;
                 })
                 .toList();
+
+        PaginatedResponseDTO response = new PaginatedResponseDTO();
+        response.setContent(taskDTOs);
+        response.setPageNumber(tasksPage.getNumber());
+        response.setPageSize(tasksPage.getSize());
+        response.setTotalElements(tasksPage.getTotalElements());
+        response.setTotalPages(tasksPage.getTotalPages());
+        response.setLast(tasksPage.isLast());
+        response.setFirst(tasksPage.isFirst());
+        response.setNumberOfElements(tasksPage.getNumberOfElements());
+
+        return response;
     }
+
+
+
 
     public String updateTask(TaskDTO taskDTO, String tlId, String employeeId, MultipartFile[] attachedFileLinks, String projectId) throws IOException {
         TaskId compositeTaskId = new TaskId(taskDTO.getId(), projectId);
@@ -173,8 +188,8 @@ public class TaskServiceImpl {
         taskUpdate.setRemark(taskUpdateDTO.getRemark());
         if (relatedFileLinks != null && relatedFileLinks.length > 0 && !relatedFileLinks[0].isEmpty()) {
 
-        List<String> s3Keys = s3Service.uploadMultipleFiles(task.getEmployee().getEmployeeId(), "relatedFileLinks", relatedFileLinks);
-        taskUpdate.setRelatedFileLinks(s3Keys);
+            List<String> s3Keys = s3Service.uploadMultipleFiles(task.getEmployee().getEmployeeId(), "relatedFileLinks", relatedFileLinks);
+            taskUpdate.setRelatedFileLinks(s3Keys);
         }
 
         taskUpdateRepository.save(taskUpdate);
@@ -292,27 +307,24 @@ public class TaskServiceImpl {
                 s3Service.deleteFile(key);
             }
         }
-            taskRepository.deleteById(taskKey);
+        taskRepository.deleteById(taskKey);
 
-            return "Task deleted successfully";
-        }
-
-
-    public List<TaskDTO> getTasks(Integer pageNumber,Integer pageSize, String sortBy, String sortOrder,String tlId) {
+        return "Task deleted successfully";
+    }
 
 
+    public PaginatedResponseDTO getTasks(Integer pageNumber,Integer pageSize, String sortBy, String sortOrder,String tlId) {
 
-        Sort sortByAndOrder=sortOrder.equalsIgnoreCase("asc")
-                ?Sort.by(sortBy).ascending()
-                :Sort.by(sortBy).descending();
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(pageNumber,pageSize,sortByAndOrder);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
-        Page<Task> tasks = taskRepository.findByCreatedBy(tlId,pageable);
+        Page<Task> tasksPage = taskRepository.findByCreatedBy(tlId, pageable);
 
 
-
-        return tasks.stream()
+        List<TaskDTO> taskDTOs = tasksPage.getContent().stream()
                 .map(task -> {
                     TaskDTO dto = new TaskDTO();
                     dto.setId(task.getId().getTaskId());
@@ -334,7 +346,22 @@ public class TaskServiceImpl {
                     return dto;
                 })
                 .toList();
+
+
+        PaginatedResponseDTO response = new PaginatedResponseDTO();
+
+        response.setTasks(taskDTOs);
+        response.setPageNumber(tasksPage.getNumber());
+        response.setPageSize(tasksPage.getSize());
+        response.setTotalElements(tasksPage.getTotalElements());
+        response.setTotalPages(tasksPage.getTotalPages());
+        response.setLast(tasksPage.isLast());
+        response.setFirst(tasksPage.isFirst());
+        response.setNumberOfElements(tasksPage.getNumberOfElements());
+
+        return response;
     }
+
 
     public String deleteTaskHsitory(String projectId, String taskId,Long id) {
 

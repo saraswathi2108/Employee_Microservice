@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")
@@ -22,21 +23,20 @@ public class ImageController {
     private ImageService imageService;
 
     @PostMapping("/{employeeId}/upload")
-    public ResponseEntity<EmployeeDTO> uploadEmployeeImage(@RequestParam(value="employeeImage",required = false) MultipartFile employeeImage,
-                                                           @PathVariable("employeeId") String employeeId) throws IOException {
-        EmployeeDTO employee=imageService.uploadEmployeeImage(employeeImage,employeeId);
-        return ResponseEntity.ok(employee);
-
+    public CompletableFuture< ResponseEntity<EmployeeDTO>> uploadEmployeeImage(@RequestParam(value="employeeImage",required = false) MultipartFile employeeImage,
+                                                                             @PathVariable("employeeId") String employeeId) throws IOException {
+        return imageService.uploadEmployeeImage(employeeImage, employeeId)
+                .thenApply(ResponseEntity::ok);
     }
     @DeleteMapping("/{employeeId}/deleteImage")
-    public ResponseEntity<String> deleteEmployeeImage(@PathVariable("employeeId") String employeeId){
-        EmployeeDTO employeeDTO=imageService.deleteEmployeeImage(employeeId);
-        return ResponseEntity.ok("Image deleted successfully for employeeId: " + employeeId);
-    }
+    public CompletableFuture<ResponseEntity<String>> deleteEmployeeImage(@PathVariable("employeeId") String employeeId) {
+        return imageService.deleteEmployeeImage(employeeId)
+                .thenApply(dto -> ResponseEntity.ok("Image deleted successfully for employeeId: " + employeeId));
 
+    }
     @GetMapping("/{employeeId}/image")
-    public ResponseEntity<String> getEmployeeImage(@PathVariable("employeeId") String employeeId){
-        String preSignedUrl=imageService.getEmployeeImage(employeeId);
-        return ResponseEntity.ok(preSignedUrl);
+    public CompletableFuture<ResponseEntity<String>> getEmployeeImage(@PathVariable("employeeId") String employeeId){
+            return imageService.getEmployeeImage(employeeId)
+                    .thenApply(ResponseEntity::ok);
     }
 }
