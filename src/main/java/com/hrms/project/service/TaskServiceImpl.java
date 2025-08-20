@@ -184,7 +184,6 @@ public class TaskServiceImpl {
         taskUpdate.setChanges(taskUpdateDTO.getChanges());
         taskUpdate.setNote(taskUpdateDTO.getNote());
         taskUpdate.setRelatedLinks(taskUpdateDTO.getRelatedLinks());
-        taskUpdate.setReviewedBy(reviewedById);
         taskUpdate.setRemark(taskUpdateDTO.getRemark());
         if (relatedFileLinks != null && relatedFileLinks.length > 0 && !relatedFileLinks[0].isEmpty()) {
 
