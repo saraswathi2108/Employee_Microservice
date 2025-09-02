@@ -1,0 +1,138 @@
+replicaCount: 2
+
+namespaces:
+  - hrms
+  - istio-ingress
+  - isthio-gateway
+  - cert-manager
+  - istio-system
+
+microservice:
+  name: employee
+  namespace: hrms
+  port: 8090
+
+image:
+  repository: koti21/employee-service-hrms
+  pullPolicy: IfNotPresent
+  tag: "v1"
+
+env:
+  # Application
+  SPRING_APPLICATION_NAME: "project"
+  SERVER_PORT: "8090"
+  SERVER_ADDRESS: "0.0.0.0"
+
+  # Database
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://hrmdb.c3ykgskuuzr8.ap-south-1.rds.amazonaws.com:5432/postgres"
+  SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: "employee"
+  SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_DATASOURCE_PASSWORD: "HrmAnasolDb"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+  SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.PostgreSQLDialect"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_JPA_SHOW_SQL: "true"
+  SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+
+  # File Uploads
+  SPRING_SERVLET_MULTIPART_ENABLED: "true"
+  SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: "50MB"
+  SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: "100MB"
+
+  # AWS
+  CLOUD_AWS_CREDENTIALS_ACCESSKEY: "AKIAWKTDE3X6LQ2DFY3E"
+  CLOUD_AWS_CREDENTIALS_SECRETKEY: "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"
+  CLOUD_AWS_REGION_STATIC: "ap-south-1"
+  CLOUD_AWS_S3_BUCKET: "techlifeacs"
+
+# kubectl create secret generic my-db-secret --from-literal=username=postgres --from-literal=password=HrmAnasolDb
+# kubectl create secret generic  my-aws-access --from-literal=aws-access-key=AKIAWKTDE3X6LQ2DFY3E  --from-literal=aws-secret-key=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
+
+envFromSecret:
+  DB_USERNAME:
+    name: my-db-secret
+    key: username
+  DB_PASSWORD:
+    name: my-db-secret
+    key: password
+
+  CLOUD_AWS_CREDENTIALS_ACCESSKEY:
+    name: my-aws-access
+    key: access-key-id
+  CLOUD_AWS_CREDENTIALS_SECRETKEY:
+    name: my-aws-access
+    key: secret-access-key
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # Optional:
+  # targetMemoryUtilizationPercentage: 75
+
+livenessProbe:
+  path: "employee/actuator/health/liveness"
+  initialDelaySeconds: 180
+  periodSeconds: 10
+
+readinessProbe:
+  path: "employee/actuator/health/readiness"
+  initialDelaySeconds: 150
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30081
+
+gateway_service:
+  namespace: istio-ingress
+  name: gateway
+  hostname: "hrms.anasolconsultancyservices.com"
+  isthio_injection: "disable"
+
+
+httprouts:
+  hostnames: ["hrms.anasolconsultancyservices.com"]
+  path: "/employee"
+  timeout_request: "3s"
+  retry_codes: [500, 502, 503, 504]
+  retry_attempts: 3
+  retry_backoff: "1s"
+
+serviceAccount:
+  annotations:
+    example.com/annotation: "value"
+  rules:
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "watch"]
+
+
+certificate:
+  enabled: false
+  name: wildcard-cert
+  namespace: cert-manager
+  secretName: wildcard-cert-tls
+  dnsNames:
+    - "*.anasolconsultancyservices.com"
+  email: chinnollakoteshwar@gmail.com
+  issuer:
+    name: letsencrypt
+    kind: ClusterIssuer
+    server: https://acme-v02.api.letsencrypt.org/directory
+  route53:
+    region: us-east-1
+    secretName: route53-secret
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
+
